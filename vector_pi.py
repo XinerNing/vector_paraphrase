@@ -68,7 +68,7 @@ class SimilarityVectorizer:
     def load_X(self, sent_pairs):
         """Create a matrix where every row is a pair of sentences and every column in a feature.
         """
-        features = ["tfidf_cos", "w2c_cos"]
+        features = ["tfidf_cos", "w2v_cos"]
         scores = {score_type: [] for score_type in features}
         for t1,t2 in sent_pairs:
             scores['tfidf_cos'].append(self.tfidf_sim(t1,t2))
@@ -110,7 +110,7 @@ def load_sts(sts_data):
     texts = []
     labels = []
 
-    with open(sts_data, 'r') as dd:
+    with open(sts_data, 'r',encoding="utf-8") as dd:
         for line in dd:
             fields = line.strip().split("\t")
             labels.append(float(fields[4]))
@@ -149,7 +149,7 @@ def main(sts_train_file, sts_dev_file, w2v_file):
 
     # prepare tfidf vectorizer using train
     tfidf_vectorizer = TfidfVectorizer("content", lowercase=True, analyzer="word",
-      token_pattern="\S+", use_idf=True, min_df=10)
+      token_pattern="\S+", use_idf=True)
 
     # create a SimilarityVectorizer object
     sim_vectorizer = SimilarityVectorizer(tfidf_vectorizer, w2v_vecs)
