@@ -47,14 +47,15 @@ Example usage:
 ## vector_pi.py
 
 TODO: Replace these instructions with a description of your code.
-* Use `.md` filetype
-* ~ 2 sentences about each similarity used.
-* Describe what your script does.
-* Include a usage example showing command line flags
-* Describe your output.
+
+* cosine similarity of word2vec: Based on the 50K_GoogleNews_vecs.txt, each sentence is converted to a vector of 300 numbers. Then the two vectors are compared by the cosine similarity. 
+* cosine similarity of term frequency: Each sentence is convert into a vector of numbers based on its words frequences across the text. Then the two vectors are compared by the cosine similarity. 
+* Script description: This script creates a matrix with two features: cosine similarity of word2vec and term frequency. The matrix is then being used to train a regression model to identify paraphrase. A model accuracy score is returned as the result.
+* Include a usage example showing command line flags: python vector_pi.py (50K_GoogleNews_vecs.txt is too large to be uploaded to github repository. So in order to run the .py, the environment should have this file downloaded.)
+* Output description: Accuracy of the regression model is 0.85, showing that the regression model does a fairly good job in identifying paraphrase.
 
 ## Results
 
 TODO: paste your accuracy on dev here.
 
-This system scores ______ . 
+This system scores 0.8468468468468469 . 
