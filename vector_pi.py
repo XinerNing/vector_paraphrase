@@ -1,9 +1,26 @@
-import numpy as np
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Mar 19 21:07:52 2019
+
+@author: shera
+"""
+
+
 import argparse
 
 from gensim.models import KeyedVectors
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+## me ##
+
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+#from scipy.stats import pearsonr
+from nltk.tokenize import word_tokenize # very useful, tokenize sentence into words
+from nltk.corpus import stopwords
+import string
+from sklearn.linear_model import LogisticRegression
+## me ##
 
 
 class SimilarityVectorizer:
@@ -16,30 +33,76 @@ class SimilarityVectorizer:
     def tfidf_sim(self, t1, t2):
         """Returns a float of cosine similarity between tfidf vectors for two sentences.
         Uses preprocessing including stemming."""
-
-        return 0
+        text=[t1,t2]
+        self.tfidf_vectorizer.fit(text)
+        vectors =self.tfidf_vectorizer.transform(text)
+        v1 = vectors[0].reshape((1,-1))
+        v2 = vectors[1].reshape((1,-1))
+        pair_similarity = cosine_similarity(v1, v2)[0, 0]
+        return pair_similarity 
 
     def w2v_sim(self, t1, t2):
         """Returns a float of cosine similarity between w2v vectors for two sentences.
         w2v vectors are the mean of any in-vocabulary words in the sentence, after lowercasing.
         Cosine similarity is 0 if either sentence is completely out of vocabulary. """
-
-        return 0
+        
+        ## me ##
+        # get cosine similarities of every pair in dev
+        # if either sentence is completely out of vocabulary, record "0" as the similarity
+        t1_vector = w2v_sentence(t1, self.word2vec)
+        if t1_vector is None:
+            return 0
+            
+        t1_vector = t1_vector.reshape((1, -1)) # shape for cosine similarity
+        t2_vector = w2v_sentence(t2, self.word2vec)
+        if t2_vector is None:
+            return 0
+            
+        t2_vector = t2_vector.reshape((1, -1))
+        pair_similarity = cosine_similarity(t1_vector, t2_vector)[0, 0]
+    
+        ## me ##
+        return pair_similarity
+    
 
     def load_X(self, sent_pairs):
         """Create a matrix where every row is a pair of sentences and every column in a feature.
         """
+        features = ["tfidf_cos", "w2c_cos"]
+        scores = {score_type: [] for score_type in features}
+        for t1,t2 in sent_pairs:
+            scores['tfidf_cos'].append(self.tfidf_sim(t1,t2))
+            scores['w2v_cos'].append(self.w2v_sim(t1,t2))
+            
         X = np.zeros((len(sent_pairs), 2))
+        for i,f in enumerate(scores):
+            X[:, i] = scores[f]
 
         return X
 
 
-def preprocess_text(text, stem=False):
+def preprocess_text(text, stem=True):
     """Preprocess one sentence: tokenizes, lowercases, (optionally) applies the Porter stemmer,
      removes punctuation tokens and stopwords.
      Returns a string of tokens joined by whitespace."""
-    toks = []
+    remove_tokens = set(stopwords.words("english") + list(string.punctuation))
+    toks = word_tokenize(text)
+    toks = [tok for tok in toks if tok not in remove_tokens]
     return toks
+
+
+## me ##
+def w2v_sentence(sent, word2vec):
+    """Creates a sentence representation by taking the mean of all in-vocabulary word vectors.
+    Returns None if no words are in vocabulary."""
+    toks = preprocess_text(sent)
+    veclist = [word2vec[tok] for tok in toks if tok in word2vec]
+    if len(veclist) == 0:
+        return None
+    #vec_mat = np.vstack(veclist)
+    mean_vec = np.mean(veclist, axis=0)
+    return mean_vec  # return a vector of 300 numbers to represent a sentence (t1)
+## me ##
 
 
 def load_sts(sts_data):
@@ -102,14 +165,17 @@ def main(sts_train_file, sts_dev_file, w2v_file):
     dev_X = sim_vectorizer.load_X(dev_texts)
 
     print("Fitting and evaluating model")
+    lr = LogisticRegression()
+    lr.fit(train_X, train_y)
+    print(lr.score(dev_X, dev_y))
 
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--sts_dev_file", type=str, default="../sts_strings/stsbenchmark/sts-dev.csv",
+    parser = argparse.ArgumentParser(description="tfidf,w2v hw")
+    parser.add_argument("--sts_dev_file", type=str, default="sts-dev.csv",
                         help="dev file")
-    parser.add_argument("--sts_train_file", type=str, default="../sts_strings/stsbenchmark/sts-train.csv",
+    parser.add_argument("--sts_train_file", type=str, default="sts-train.csv",
                         help="train file")
     parser.add_argument("--w2v_file", type=str, default="50K_GoogleNews_vecs.txt",
                         help="file with word2vec vectors as text")
